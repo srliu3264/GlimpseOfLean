@@ -627,7 +627,8 @@ lemma id_le_extraction' : extraction φ → ∀ n, n ≤ φ n := by
   induction n with
   | zero =>  apply?
   | succ n ih => exact Nat.succ_le_of_lt (by
-      calc n ≤ φ n := ih
+      calc 
+        n ≤ φ n := ih
         _    < φ (n + 1) := by apply hyp; apply?)
 
 /-
@@ -640,7 +641,25 @@ Don’t forget to move the cursor around to see what each `apply?` is proving.
 /-- Extractions take arbitrarily large values for arbitrarily large
 inputs. -/
 lemma extraction_ge : extraction φ → ∀ N N', ∃ n ≥ N', φ n ≥ N := by
-  sorry
+  intro hyp N N'
+  induction N with
+  | zero => 
+      use N';constructor
+      ·--First Goal
+            exact id_le_extraction' (fun n m a ↦ a) N'
+      ·--Second Goal
+            exact Nat.zero_le (φ N')
+  | succ n ih => 
+    rcases ih with ⟨n1, hn1⟩
+    use n1+1;constructor
+    · --First Goal
+      calc
+        n1+1 >= n1 := by apply?
+        _    >= N' := by apply hn1.1
+    ·--Second Goal
+      calc
+        φ (n1 + 1) > φ (n1) := by apply hyp; exact lt_add_one n1
+        _          >= n := by apply hn1.2
 
 /-- A real number `a` is a cluster point of a sequence `u`
 if `u` has a subsequence converging to `a`. -/
@@ -650,13 +669,29 @@ def cluster_point (u : ℕ → ℝ) (a : ℝ) := ∃ φ, extraction φ ∧ seq_l
 `u` arbitrarily close to `a` for arbitrarily large input. -/
 lemma near_cluster :
   cluster_point u a → ∀ ε > 0, ∀ N, ∃ n ≥ N, |u n - a| ≤ ε := by
-  sorry
+  intro hyp
+  rcases hyp with ⟨φ,hφ⟩
+  intro ε ε_pos N
+  rcases hφ.2 ε ε_pos with ⟨N1,hN1⟩
+  obtain ⟨k, hk_ge_N1, hphi_k_ge_N⟩ := extraction_ge hφ.1 N N1
+  use (φ k)
+  constructor
+  · apply hphi_k_ge_N
+  · calc
+    |u (φ k) - a|  = |(u∘φ) k - a| := by simp
+    _              <=  ε           := by exact hN1 k hk_ge_N1
 
 
 /-- If `u` tends to `l` then its subsequences tend to `l`. -/
 lemma subseq_tendsto_of_tendsto' (h : seq_limit u l) (hφ : extraction φ) :
   seq_limit (u ∘ φ) l := by
-  sorry
+  intro ε ε_pos
+  rcases h ε ε_pos with ⟨N,hN⟩
+  use N
+  intro n hn
+  calc
+     |(u ∘ φ) n - l|  = |u (φ n) - l| := by simp
+     _               <= ε            := by apply hN (φ n); apply le_trans hn (id_le_extraction' hφ n)
 
 /-- If `u` tends to `l` all its cluster points are equal to `l`. -/
 lemma cluster_limit (hl : seq_limit u l) (ha : cluster_point u a) : a = l := by
