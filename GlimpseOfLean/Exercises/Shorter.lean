@@ -695,7 +695,9 @@ lemma subseq_tendsto_of_tendsto' (h : seq_limit u l) (hφ : extraction φ) :
 
 /-- If `u` tends to `l` all its cluster points are equal to `l`. -/
 lemma cluster_limit (hl : seq_limit u l) (ha : cluster_point u a) : a = l := by
-  sorry
+  rcases ha with ⟨φ,hφ⟩
+  apply uniq_limit hφ.2 (by apply subseq_tendsto_of_tendsto' hl hφ.1)
+
 
 /-- `u` is a Cauchy sequence if its values get arbitrarily close for large
 enough inputs. -/
@@ -703,6 +705,17 @@ def CauchySequence (u : ℕ → ℝ) :=
   ∀ ε > 0, ∃ N, ∀ p q, p ≥ N → q ≥ N → |u p - u q| ≤ ε
 
 example : (∃ l, seq_limit u l) → CauchySequence u := by
-  sorry
+  intro hyp
+  intro ε ε_pos
+  rcases hyp with ⟨l, hl⟩
+  rcases hl (ε/2) (by exact half_pos ε_pos) with ⟨N,hN⟩
+  use N
+  intro p q hp hq
+  calc
+    |u p-u q| = |((u p) - l) - ((u q) -l)| := by ring 
+    _         <= |((u p) - l)| + |((u q) -l)| := by  exact abs_sub (u p - l) (u q - l)
+    _         <=  (ε/2) + (ε/2) := by exact add_le_add (hN p hp) (hN q hq)
+    _         =   ε             := by ring
+
 
 
