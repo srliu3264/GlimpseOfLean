@@ -41,7 +41,7 @@ finish the exercise.
 -/
 
 example (a b : ℝ) : (a+b)*(a-b) = a^2 - b^2 := by
-  sorry
+  ring
 
 /-
 Our next tactic is the `congr` tactic (`congr` stands for “congruence”).
@@ -60,7 +60,8 @@ Try it on the next example.
 -/
 
 example (a b : ℝ) (f : ℝ → ℝ) : f ((a+b)^2 - 2*a*b) = f (a^2 + b^2) := by
-  sorry
+  congr
+  ring
 
 /-
 When there are several mismatches, `congr` creates several goals.
@@ -127,7 +128,14 @@ This is different from regular selection of text in your editor or browser.
 -/
 
 example (a b c : ℝ) (h : a = -b) (h' : b + c = 0) : b*(a - c) = 0 := by
-  sorry
+  calc 
+    b*(a-c) = b*a - b*c :=by ring
+    _       = b*(-b) - b*c := by congr
+    _       = b*(-b) - b*((b+c)-b) :=by ring
+    _       = b*(-b) - b*(0-b) := by congr
+    _       = b*(-b) -b*(-b) := by ring
+    _       = 0     :=by ring
+
 
 /-
 We can also handle inequalities using `gcongr` (which stands for “generalized congruence”)
@@ -140,7 +148,9 @@ example (a b : ℝ) (h : a ≤ 2*b) : a + b ≤ 3*b := by
     _     = 3*b     := by ring
 
 example (a b : ℝ) (h : b ≤ a) : a + b ≤ 2*a := by
-  sorry
+  calc 
+      a +b <= a+ a := by gcongr
+      _    = 2*a := by ring
 
 /-
 The last tactic you will use in computation is the simplifier `simp`. It will
@@ -200,7 +210,7 @@ In the following exercise, you get to choose whether you want help from Lean
 or do all the work.
 -/
 example (f : ℝ → ℝ) (hf : even_fun f) : f (-5) = f 5 := by
-  sorry
+  apply hf
 
 /-
 This was about using a `∀`. Let us now see how to prove a `∀`.
@@ -292,7 +302,12 @@ need to be the same notation as in the statement.
 -/
 
 example (f g : ℝ → ℝ) (hf : even_fun f) : even_fun (g ∘ f) := by
-  sorry
+  unfold even_fun at hf
+  unfold even_fun
+  intro x₀
+  calc
+    (g ∘ f) (-x₀) = g (f (-x₀))  := by simp
+    _             = g (f x₀)     := by congr 1; apply hf
 
 /-
 Let's now combine the universal quantifier with implication.
@@ -358,7 +373,11 @@ into pieces. You can choose your way in the following variation.
 
 example (f g : ℝ → ℝ) (hf : non_decreasing f) (hg : non_increasing g) :
     non_increasing (g ∘ f) := by
-  sorry
+  intro x1 x2 hx
+  simp
+  apply hg
+  apply hf
+  apply hx
 
 /-
 At this stage you should feel that such a proof actually doesn’t require any
@@ -390,7 +409,8 @@ Use `simp` to prove the following. Note that `X : Set ℝ` means that `X` is a
 set containing (only) real numbers. -/
 
 example (x : ℝ) (X Y : Set ℝ) (hx : x ∈ X) : x ∈ (X ∩ Y) ∪ (X \ Y) := by
-  sorry
+  simp
+  apply hx
 
 /-
 The `apply?` tactic will find lemmas from the library and tell you their names.
@@ -400,7 +420,7 @@ Use `apply?` to find the lemma that every continuous function with compact suppo
 has a global minimum. -/
 
 example (f : ℝ → ℝ) (hf : Continuous f) (h2f : HasCompactSupport f) : ∃ x, ∀ y, f x ≤ f y := by
-  sorry
+  apply?
 
 /- ## Existential quantifiers
 
@@ -439,7 +459,12 @@ example (a b c : ℤ) (h₁ : a ∣ b) (h₂ : b ∣ c) : a ∣ c := by
     _ = a*(k*l) := by ring
 
 example (a b c : ℤ) (h₁ : a ∣ b) (h₂ : a ∣ c) : a ∣ b + c := by
-  sorry
+  rcases h₁ with ⟨k,hk⟩
+  rcases h₂ with ⟨l,hl⟩
+  use k+l
+  calc
+    b+c = a*k + a*l := by congr
+    _   = a*(k+l)   := by ring
 
 /-
 ## Conjunctions
@@ -530,7 +555,26 @@ You will probably want to rewrite using `abs_le` in several assumptions as well 
 goal. You can use `rw [abs_le] at *` for this. -/
 example (hu : seq_limit u l) (hw : seq_limit w l) (h : ∀ n, u n ≤ v n) (h' : ∀ n, v n ≤ w n) :
     seq_limit v l := by
-  sorry
+      intro ε ε_pos
+      rcases hu ε ε_pos with ⟨N₁, hN₁⟩
+      rcases hw ε ε_pos with ⟨N₂, hN₂⟩
+      use max N₁ N₂
+      intro n hn
+      rw [ge_max_iff] at hn
+      specialize hN₁ n hn.1
+      specialize hN₂ n hn.2
+      rw [abs_le] at hN₁ hN₂
+      refine abs_sub_le_iff.mpr ?_
+      constructor
+      case h.left := by
+        calc
+          v n - l <= w n - l := by gcongr; apply h'
+          _       <= ε       := by apply hN₂.2
+      case h.right := by
+        calc
+          l - v n <= l - u n := by gcongr; apply h
+          _       = - (u n - l):= by ring
+          _       <= ε         := by refine neg_le.mp ?_; apply hN₁.1
 
 
 /- In the next exercise, we'll use
@@ -544,7 +588,18 @@ as the first step.
 -- exercises.
 lemma uniq_limit (hl : seq_limit u l) (hl' : seq_limit u l') : l = l' := by
   apply eq_of_abs_sub_le_all
-  sorry
+  intro ε ε_pos
+  /- refine abs_sub_le_iff.mpr ?_ -/
+  /- constructor -/
+  rcases hl (ε/2) (by exact half_pos ε_pos) with ⟨N1,hN1⟩
+  rcases hl' (ε/2) (by exact half_pos ε_pos) with ⟨N2,hN2⟩
+  specialize hN1 (max N1 N2) (by exact Nat.le_max_left N1 N2)
+  specialize hN2 (max N1 N2) (by exact Nat.le_max_right N1 N2)
+  calc
+     |l-l'| = |(u (max N1 N2)) - l' - (( u (max N1 N2)) - l)| := by ring
+     _        <= |(u (max N1 N2)) - l'| + |(u (max N1 N2)) - l| :=  by  exact abs_sub (u (max N1 N2) - l') (u (max N1 N2) - l)
+     _        <= (ε/2) + (ε/2) := by gcongr
+     _        =  ε := by ring
 
 /-
 
