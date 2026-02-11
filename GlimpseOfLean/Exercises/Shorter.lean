@@ -268,11 +268,7 @@ Hence we can compress the above proof to:
 -/
 
 example (f g : ℝ → ℝ)  (hf : even_fun f) (hg : even_fun g) : even_fun (f + g) := by
-  intro x₀
-  calc
-    (f + g) (-x₀) = f (-x₀) + g (-x₀)  := by simp
-    _             = f x₀ + g x₀        := by congr 1; apply hf; apply hg
-
+  sorry 
 /-
 If you would rather uncompress the proof, you can use the `specialize` tactic to
 specialize a universally quantified assumption before using it.
@@ -280,17 +276,7 @@ specialize a universally quantified assumption before using it.
 
 example (f g : ℝ → ℝ) (hf : even_fun f) (hg : even_fun g) : even_fun (f + g) := by
   -- Let x₀ be any real number
-  intro x₀
-  specialize hf x₀ -- hf is now only about the x₀ we just introduced
-  specialize hg x₀ -- hg is now only about the x₀ we just introduced
-  -- and let's compute
-  -- (note how `congr` now finds assumptions finishing those steps)
-  calc
-    (f + g) (-x₀) = f (-x₀) + g (-x₀)  := by simp
-    _             = f x₀ + g (-x₀)     := by congr
-    _             = f x₀ + g x₀        := by congr
-    _             = (f + g) x₀         := by simp
-
+  sorry
 /-
 Now let's practice. If you need to learn how to type a unicode symbol, you can
 put your mouse cursor above the symbol and wait for one second.
@@ -704,7 +690,7 @@ enough inputs. -/
 def CauchySequence (u : ℕ → ℝ) :=
   ∀ ε > 0, ∃ N, ∀ p q, p ≥ N → q ≥ N → |u p - u q| ≤ ε
 
-example : (∃ l, seq_limit u l) → CauchySequence u := by
+example: (∃ l, seq_limit u l) → CauchySequence u := by
   intro hyp
   intro ε ε_pos
   rcases hyp with ⟨l, hl⟩
@@ -716,6 +702,3 @@ example : (∃ l, seq_limit u l) → CauchySequence u := by
     _         <= |((u p) - l)| + |((u q) -l)| := by  exact abs_sub (u p - l) (u q - l)
     _         <=  (ε/2) + (ε/2) := by exact add_le_add (hN p hp) (hN q hq)
     _         =   ε             := by ring
-
-
-
